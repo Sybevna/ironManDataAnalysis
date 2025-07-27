@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 st.set_page_config(page_title="Ironman Results Analysis", layout="wide")
 st.title("Ironman Results Analysis Dashboard")
@@ -208,18 +208,28 @@ if "data" in st.session_state:
             ax2 = ax.twinx()
             total_count = len(data_col)
             percentages = (counts / total_count) * 100
-            ax2.set_ylabel("Percentage (%)", color="red")
-            ax2.set_ylim(0, max(percentages) * 1.1)
-            ax2.tick_params(axis="y", labelcolor="red")
+            ax2.set_ylabel("Percentage (%)", color="blue")
+            ax2.set_ylim(0, 110)
+            ax2.tick_params(axis="y", labelcolor="blue")
 
-            ax.axvline(
+            # Plot cumulative percentage line
+            ax2.plot(
+                bins[:-1],
+                np.cumsum(percentages),
+                color="blue",
+                linewidth=2,
+                label="Cumulative %",
+            )
+
+            # Mean and median lines
+            mean_line = ax.axvline(
                 mean_time,
                 color="red",
                 linestyle="--",
                 linewidth=2,
                 label=f"Mean: {mean_time:.2f} {unit_label}",
             )
-            ax.axvline(
+            median_line = ax.axvline(
                 median_time,
                 color="green",
                 linestyle="--",
@@ -235,11 +245,13 @@ if "data" in st.session_state:
                     rotation=0,
                     va="bottom",
                     ha="center",
-                    fontsize=8,
+                    fontsize=9,
                     color="red",
                 )
 
-            ax.legend()
+            lines, labels = ax.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax.legend(lines + lines2, labels + labels2, loc="center right")
             return fig
 
         # Swim Analysis
