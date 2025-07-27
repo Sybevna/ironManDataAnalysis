@@ -212,7 +212,6 @@ if "data" in st.session_state:
             ax2.set_ylim(0, 110)
             ax2.tick_params(axis="y", labelcolor="blue")
 
-            # Plot cumulative percentage line
             ax2.plot(
                 bins[:-1],
                 np.cumsum(percentages),
@@ -221,7 +220,6 @@ if "data" in st.session_state:
                 label="Cumulative %",
             )
 
-            # Mean and median lines
             mean_line = ax.axvline(
                 mean_time,
                 color="red",
