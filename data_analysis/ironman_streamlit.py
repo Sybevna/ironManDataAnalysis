@@ -33,26 +33,26 @@ age_groups = [
     "FPRO",
     "MPRO",
     "M18-24",
-    "M25-29",
-    "M30-34",
-    "M35-39",
-    "M40-44",
-    "M45-49",
-    "M50-54",
-    "M55-59",
-    "M60-64",
-    "M65-69",
-    "M70-74",
     "F18-24",
+    "M25-29",
     "F25-29",
+    "M30-34",
     "F30-34",
+    "M35-39",
     "F35-39",
+    "M40-44",
     "F40-44",
+    "M45-49",
     "F45-49",
+    "M50-54",
     "F50-54",
+    "M55-59",
     "F55-59",
+    "M60-64",
     "F60-64",
+    "M65-69",
     "F65-69",
+    "M70-74",
     "F70-74",
 ]
 
@@ -103,220 +103,256 @@ if "data" in st.session_state:
     st.subheader(
         f"Analysis for {st.session_state.race_name} - {st.session_state.age_group} - {st.session_state.country}"
     )
+    if len(data) > 0:
+        data["wtc_finisher"] = data["wtc_finisher"].astype(int)
+        data_no_dnf = data.drop(data[data.wtc_finisher == 0].index)
 
-    data["wtc_finisher"] = data["wtc_finisher"].astype(int)
-    data_no_dnf = data.drop(data[data.wtc_finisher == 0].index)
-
-    def format_timedelta(td):
-        total_seconds = int(td.total_seconds())
-        hours, remainder = divmod(total_seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        if hours > 0:
-            return f"{hours:01}:{minutes:02}:{seconds:02}"
-        else:
-            return f"{minutes:01}:{seconds:02}"
-
-    if len(data_no_dnf) > 0:
-        # Swim
-        data_no_dnf["swim_time"] = pd.to_timedelta(data_no_dnf["wtc_swimtimeformatted"])
-        data_no_dnf["swim_time_minutes"] = (
-            data_no_dnf["swim_time"].dt.total_seconds() / 60
-        )
-
-        # T1
-        data_no_dnf["T1_time"] = pd.to_timedelta(
-            data_no_dnf["wtc_transition1time_formatted"]
-            .str.replace(",", "")
-            .astype(int),
-            unit="s",
-        )
-        data_no_dnf["T1_time_minutes"] = data_no_dnf["T1_time"].dt.total_seconds() / 60
-
-        # Bike
-        data_no_dnf["bike_time"] = pd.to_timedelta(data_no_dnf["wtc_biketimeformatted"])
-        data_no_dnf["bike_time_minutes"] = (
-            data_no_dnf["bike_time"].dt.total_seconds() / 60
-        )
-
-        # T2
-        data_no_dnf["T2_time"] = pd.to_timedelta(
-            data_no_dnf["wtc_transition2time_formatted"]
-            .str.replace(",", "")
-            .astype(int),
-            unit="s",
-        )
-        data_no_dnf["T2_time_minutes"] = data_no_dnf["T2_time"].dt.total_seconds() / 60
-
-        # Run
-        data_no_dnf["run_time"] = pd.to_timedelta(
-            data_no_dnf["wtc_runtime_formatted"].str.replace(",", "").astype(int),
-            unit="s",
-        )
-        data_no_dnf["run_time_minutes"] = (
-            data_no_dnf["run_time"].dt.total_seconds() / 60
-        )
-
-        # Finish time
-        data_no_dnf["finish_time"] = pd.to_timedelta(
-            data_no_dnf["wtc_finishtime_formatted"].str.replace(",", "").astype(int),
-            unit="s",
-        )
-        data_no_dnf["finish_time_minutes"] = (
-            data_no_dnf["finish_time"].dt.total_seconds() / 60
-        )
-
-    # DNF Analysis
-    st.subheader("DNF Analysis")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        dnf = data.groupby(["wtc_finisher"]).size().reset_index(name="count")
-        fig, ax = plt.subplots(figsize=(8, 6))
-        labels = ["DNF" if x == 0 else "Finisher" for x in dnf["wtc_finisher"]]
-        ax.pie(dnf["count"], labels=labels, autopct="%1.1f%%")
-        ax.set_title("DNF vs Finisher Distribution")
-        st.pyplot(fig)
-
-    with col2:
-        st.metric("Total Participants", len(data))
-        st.metric("Finishers", len(data_no_dnf))
-        if len(data) > 0:
-            dnf_rate = (len(data) - len(data_no_dnf)) / len(data) * 100
-            st.metric("DNF Rate", f"{dnf_rate:.1f}%")
-
-    if len(data_no_dnf) > 0:
-
-        def create_histogram(data_col, title, xlabel, time_unit="minutes"):
-            if time_unit == "hours":
-                data_col = data_col / 60
-                unit_label = "hours"
+        def format_timedelta(td):
+            total_seconds = int(td.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            if hours > 0:
+                return f"{hours:01}:{minutes:02}:{seconds:02}"
             else:
-                unit_label = "minutes"
+                return f"{minutes:01}:{seconds:02}"
 
-            mean_time = data_col.mean()
-            median_time = data_col.median()
-
-            fig, ax = plt.subplots(figsize=(10, 6))
-            counts, bins, patches = ax.hist(
-                data_col, bins=10, color="skyblue", edgecolor="black"
+        if len(data_no_dnf) > 0:
+            # Swim
+            data_no_dnf["swim_time"] = pd.to_timedelta(
+                data_no_dnf["wtc_swimtimeformatted"]
             )
-            ax.set_xlabel(f"{xlabel} ({unit_label})")
-            ax.set_ylabel("Frequency")
-            ax.set_title(f"Histogram of {title} (excluding DNFs)")
-            ax.grid(True)
-
-            ax2 = ax.twinx()
-            total_count = len(data_col)
-            percentages = (counts / total_count) * 100
-            ax2.set_ylabel("Percentage (%)", color="blue")
-            ax2.set_ylim(0, 110)
-            ax2.tick_params(axis="y", labelcolor="blue")
-
-            ax2.plot(
-                bins[:-1],
-                np.cumsum(percentages),
-                color="blue",
-                linewidth=2,
-                label="Cumulative %",
+            data_no_dnf["swim_time_minutes"] = (
+                data_no_dnf["swim_time"].dt.total_seconds() / 60
             )
 
-            mean_line = ax.axvline(
-                mean_time,
-                color="red",
-                linestyle="--",
-                linewidth=2,
-                label=f"Mean: {mean_time:.2f} {unit_label}",
+            # T1
+            data_no_dnf["T1_time"] = pd.to_timedelta(
+                data_no_dnf["wtc_transition1time_formatted"]
+                .str.replace(",", "")
+                .astype(int),
+                unit="s",
             )
-            median_line = ax.axvline(
-                median_time,
-                color="green",
-                linestyle="--",
-                linewidth=2,
-                label=f"Median: {median_time:.2f} {unit_label}",
+            data_no_dnf["T1_time_minutes"] = (
+                data_no_dnf["T1_time"].dt.total_seconds() / 60
             )
 
-            for b in bins:
-                ax.text(
-                    b,
-                    max(counts) * 0.02,
-                    f"{b:.1f}",
-                    rotation=0,
-                    va="bottom",
-                    ha="center",
-                    fontsize=9,
-                    color="red",
+            # Bike
+            data_no_dnf["bike_time"] = pd.to_timedelta(
+                data_no_dnf["wtc_biketimeformatted"]
+            )
+            data_no_dnf["bike_time_minutes"] = (
+                data_no_dnf["bike_time"].dt.total_seconds() / 60
+            )
+
+            # T2
+            data_no_dnf["T2_time"] = pd.to_timedelta(
+                data_no_dnf["wtc_transition2time_formatted"]
+                .str.replace(",", "")
+                .astype(int),
+                unit="s",
+            )
+            data_no_dnf["T2_time_minutes"] = (
+                data_no_dnf["T2_time"].dt.total_seconds() / 60
+            )
+
+            # Run
+            data_no_dnf["run_time"] = pd.to_timedelta(
+                data_no_dnf["wtc_runtime_formatted"].str.replace(",", "").astype(int),
+                unit="s",
+            )
+            data_no_dnf["run_time_minutes"] = (
+                data_no_dnf["run_time"].dt.total_seconds() / 60
+            )
+
+            # Finish time
+            data_no_dnf["finish_time"] = pd.to_timedelta(
+                data_no_dnf["wtc_finishtime_formatted"]
+                .str.replace(",", "")
+                .astype(int),
+                unit="s",
+            )
+            data_no_dnf["finish_time_minutes"] = (
+                data_no_dnf["finish_time"].dt.total_seconds() / 60
+            )
+
+        # DNF Analysis
+        st.subheader("DNF Analysis")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            dnf = data.groupby(["wtc_finisher"]).size().reset_index(name="count")
+            fig, ax = plt.subplots(figsize=(8, 6))
+            labels = ["DNF" if x == 0 else "Finisher" for x in dnf["wtc_finisher"]]
+            ax.pie(dnf["count"], labels=labels, autopct="%1.1f%%")
+            ax.set_title("DNF vs Finisher Distribution")
+            st.pyplot(fig)
+
+        with col2:
+            st.metric("Total Participants", len(data))
+            st.metric("Finishers", len(data_no_dnf))
+            if len(data) > 0:
+                dnf_rate = (len(data) - len(data_no_dnf)) / len(data) * 100
+                st.metric("DNF Rate", f"{dnf_rate:.1f}%")
+
+        if len(data_no_dnf) > 0:
+
+            def create_histogram(data_col, title, xlabel, time_unit="minutes"):
+                if time_unit == "hours":
+                    data_col = data_col / 60
+                    unit_label = "hours"
+                else:
+                    unit_label = "minutes"
+
+                mean_time = data_col.mean()
+                median_time = data_col.median()
+
+                fig, ax = plt.subplots(figsize=(10, 6))
+                counts, bins, patches = ax.hist(
+                    data_col, bins=10, color="skyblue", edgecolor="black"
+                )
+                ax.set_xlabel(f"{xlabel} ({unit_label})")
+                ax.set_ylabel("Frequency")
+                ax.set_title(f"Histogram of {title} (excluding DNFs)")
+                ax.grid(True)
+
+                ax2 = ax.twinx()
+                total_count = len(data_col)
+                percentages = (counts / total_count) * 100
+                ax2.set_ylabel("Percentage (%)", color="blue")
+                ax2.set_ylim(0, 110)
+                ax2.tick_params(axis="y", labelcolor="blue")
+
+                ax2.plot(
+                    bins[:-1],
+                    np.cumsum(percentages),
+                    color="blue",
+                    linewidth=2,
+                    label="Cumulative %",
                 )
 
-            lines, labels = ax.get_legend_handles_labels()
-            lines2, labels2 = ax2.get_legend_handles_labels()
-            ax.legend(lines + lines2, labels + labels2, loc="center right")
-            return fig
+                mean_line = ax.axvline(
+                    mean_time,
+                    color="red",
+                    linestyle="--",
+                    linewidth=2,
+                    label=f"Mean: {mean_time:.2f} {unit_label}",
+                )
+                median_line = ax.axvline(
+                    median_time,
+                    color="green",
+                    linestyle="--",
+                    linewidth=2,
+                    label=f"Median: {median_time:.2f} {unit_label}",
+                )
 
-        # Swim Analysis
-        st.subheader("Swim Times")
-        fig_swim = create_histogram(
-            data_no_dnf["swim_time_minutes"], "Swim Times", "Swim Time"
-        )
-        st.pyplot(fig_swim)
+                for b in bins:
+                    ax.text(
+                        b,
+                        max(counts) * 0.02,
+                        f"{b:.1f}",
+                        rotation=0,
+                        va="bottom",
+                        ha="center",
+                        fontsize=9,
+                        color="red",
+                    )
 
-        # T1 Analysis
-        st.subheader("T1 Times")
-        fig_t1 = create_histogram(data_no_dnf["T1_time_minutes"], "T1 Times", "T1 Time")
-        st.pyplot(fig_t1)
+                lines, labels = ax.get_legend_handles_labels()
+                lines2, labels2 = ax2.get_legend_handles_labels()
+                ax.legend(lines + lines2, labels + labels2, loc="center right")
+                return fig
 
-        # Bike Analysis
-        st.subheader("Bike Times")
-        fig_bike = create_histogram(
-            data_no_dnf["bike_time_minutes"], "Bike Times", "Bike Time", "hours"
-        )
-        st.pyplot(fig_bike)
+            # Swim Analysis
+            st.subheader("Swim Times")
+            if not data_no_dnf["wtc_swimtimeformatted"].isna().all():
+                fig_swim = create_histogram(
+                    data_no_dnf["swim_time_minutes"], "Swim Times", "Swim Time"
+                )
+                st.pyplot(fig_swim)
+            else:
+                st.error("No swim data in the dataset, this is not a bug !")
 
-        # T2 Analysis
-        st.subheader("T2 Times")
-        fig_t2 = create_histogram(data_no_dnf["T2_time_minutes"], "T2 Times", "T2 Time")
-        st.pyplot(fig_t2)
+            # T1 Analysis
+            st.subheader("T1 Times")
+            if not data_no_dnf["wtc_transition1time_formatted"].isna().all():
+                fig_t1 = create_histogram(
+                    data_no_dnf["T1_time_minutes"], "T1 Times", "T1 Time"
+                )
+                st.pyplot(fig_t1)
+            else:
+                st.error("No T1 data in the dataset, this is not a bug !")
 
-        # Run Analysis
-        st.subheader("Run Times")
-        fig_run = create_histogram(
-            data_no_dnf["run_time_minutes"], "Run Times", "Run Time", "hours"
-        )
-        st.pyplot(fig_run)
+            # Bike Analysis
+            st.subheader("Bike Times")
+            if not data_no_dnf["wtc_biketimeformatted"].isna().all():
+                fig_bike = create_histogram(
+                    data_no_dnf["bike_time_minutes"], "Bike Times", "Bike Time", "hours"
+                )
+                st.pyplot(fig_bike)
+            else:
+                st.error("No bike data in the dataset, this is not a bug !")
 
-        # Finish Time Analysis
-        st.subheader("Overall Finish Times")
-        fig_finish = create_histogram(
-            data_no_dnf["finish_time_minutes"], "Finish Times", "Finish Time", "hours"
-        )
-        st.pyplot(fig_finish)
+            # T2 Analysis
+            st.subheader("T2 Times")
+            if not data_no_dnf["wtc_transition2time_formatted"].isna().all():
+                fig_t2 = create_histogram(
+                    data_no_dnf["T2_time_minutes"], "T2 Times", "T2 Time"
+                )
+                st.pyplot(fig_t2)
+            else:
+                st.error("No T2 data in the dataset, this is not a bug !")
 
-        # Summary Statistics
-        st.subheader("Summary Statistics")
-        summary_data = {
-            "Discipline": ["Swim", "T1", "Bike", "T2", "Run", "Total"],
-            "Mean (min)": [
-                data_no_dnf["swim_time_minutes"].mean(),
-                data_no_dnf["T1_time_minutes"].mean(),
-                data_no_dnf["bike_time_minutes"].mean(),
-                data_no_dnf["T2_time_minutes"].mean(),
-                data_no_dnf["run_time_minutes"].mean(),
-                data_no_dnf["finish_time_minutes"].mean(),
-            ],
-            "Median (min)": [
-                data_no_dnf["swim_time_minutes"].median(),
-                data_no_dnf["T1_time_minutes"].median(),
-                data_no_dnf["bike_time_minutes"].median(),
-                data_no_dnf["T2_time_minutes"].median(),
-                data_no_dnf["run_time_minutes"].median(),
-                data_no_dnf["finish_time_minutes"].median(),
-            ],
-        }
+            # Run Analysis
+            st.subheader("Run Times")
+            if not data_no_dnf["wtc_runtime_formatted"].isna().all():
+                fig_run = create_histogram(
+                    data_no_dnf["run_time_minutes"], "Run Times", "Run Time", "hours"
+                )
+                st.pyplot(fig_run)
+            else:
+                st.error("No run data in the dataset, this is not a bug !")
 
-        summary_df = pd.DataFrame(summary_data)
-        st.dataframe(summary_df)
+            # Finish Time Analysis
+            st.subheader("Overall Finish Times")
+            fig_finish = create_histogram(
+                data_no_dnf["finish_time_minutes"],
+                "Finish Times",
+                "Finish Time",
+                "hours",
+            )
+            st.pyplot(fig_finish)
+
+            # Summary Statistics
+            st.subheader("Summary Statistics")
+            summary_data = {
+                "Discipline": ["Swim", "T1", "Bike", "T2", "Run", "Total"],
+                "Mean (min)": [
+                    data_no_dnf["swim_time_minutes"].mean(),
+                    data_no_dnf["T1_time_minutes"].mean(),
+                    data_no_dnf["bike_time_minutes"].mean(),
+                    data_no_dnf["T2_time_minutes"].mean(),
+                    data_no_dnf["run_time_minutes"].mean(),
+                    data_no_dnf["finish_time_minutes"].mean(),
+                ],
+                "Median (min)": [
+                    data_no_dnf["swim_time_minutes"].median(),
+                    data_no_dnf["T1_time_minutes"].median(),
+                    data_no_dnf["bike_time_minutes"].median(),
+                    data_no_dnf["T2_time_minutes"].median(),
+                    data_no_dnf["run_time_minutes"].median(),
+                    data_no_dnf["finish_time_minutes"].median(),
+                ],
+            }
+
+            summary_df = pd.DataFrame(summary_data)
+            st.dataframe(summary_df)
+
+        else:
+            st.warning("No finishers found for the selected criteria.")
 
     else:
-        st.warning("No finishers found for the selected criteria.")
+        st.error("No data found, this is not a bug !")
+
 
 else:
     st.info("Please select race parameters and click 'Fetch Data' to begin analysis.")
