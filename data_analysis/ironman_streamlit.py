@@ -270,7 +270,7 @@ if "data" in st.session_state:
                 )
                 st.pyplot(fig_swim)
             else:
-                st.error("No swim data in the dataset, this is not a bug !")
+                st.error("Swim data is missing for the selected race")
 
             # T1 Analysis
             st.subheader("T1 Times")
@@ -280,7 +280,7 @@ if "data" in st.session_state:
                 )
                 st.pyplot(fig_t1)
             else:
-                st.error("No T1 data in the dataset, this is not a bug !")
+                st.error("T1 data is missing for the selected race")
 
             # Bike Analysis
             st.subheader("Bike Times")
@@ -290,7 +290,7 @@ if "data" in st.session_state:
                 )
                 st.pyplot(fig_bike)
             else:
-                st.error("No bike data in the dataset, this is not a bug !")
+                st.error("Bike data is missing for the selected race")
 
             # T2 Analysis
             st.subheader("T2 Times")
@@ -300,7 +300,7 @@ if "data" in st.session_state:
                 )
                 st.pyplot(fig_t2)
             else:
-                st.error("No T2 data in the dataset, this is not a bug !")
+                st.error("T2 data is missing for the selected race")
 
             # Run Analysis
             st.subheader("Run Times")
@@ -310,7 +310,7 @@ if "data" in st.session_state:
                 )
                 st.pyplot(fig_run)
             else:
-                st.error("No run data in the dataset, this is not a bug !")
+                st.error("Run data is missing for the selected race")
 
             # Finish Time Analysis
             st.subheader("Overall Finish Times")
